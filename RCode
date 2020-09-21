@@ -1,0 +1,543 @@
+---
+title: "LiChess.org_Game_Analysis"
+author: "Josef Waples"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r Chess French Defense, echo=FALSE, fig.cap="French Defense. Position after 1. e4 e6 2. d4 d5", out.width = '90%'}
+knitr::include_graphics("/Users/josef/Desktop/french_defense.png")
+```
+
+```{r Chess French Defense Advanced Variation, echo=FALSE, fig.cap="French Defense. Position after 1. e4 e6 2. d4 d5 3. e5", out.width = '90%'}
+knitr::include_graphics("/Users/josef/Desktop/french_defense_advanced.png")
+```
+
+```{r Chess French Defense Exchange Variation, echo=FALSE, fig.cap="French Defense. Position after 1. e4 e6 2. d4 d5 3. exd5", out.width = '90%'}
+knitr::include_graphics("/Users/josef/Desktop/french_defense_exchange.png")
+```
+
+```{r Chess French Defense Paulsen Variation, echo=FALSE, fig.cap="French Defense. Position after 1. e4 e6 2. d4 d5 3. nc3", out.width = '90%'}
+knitr::include_graphics("/Users/josef/Desktop/french_defense_paulsen.png")
+```
+
+
+```{r Chess French Defense Tarrasch Variation, echo=FALSE, fig.cap="French Defense. Position after 1. e4 e6 2. d4 d5 3. nd2", out.width = '90%'}
+knitr::include_graphics("/Users/josef/Desktop/french_defense_tarrasch.png")
+```
+
+# Analyzing the French Defense
+# 1. e4 e6 2. d4 d5 
+
+## Source: 
+
+The dataset obtained is a datset of 20,000+ chess games from the chess website called Lichess.org. 
+
+https://www.kaggle.com/datasnaek/chess?select=games.csv
+
+## Research Question:
+
+Following these four first opening moves in the French Defense: 
+
+1. e4 e6 2. d4 d5 
+
+Chess theory says there are four most common responses:
+
+3. d6 (advance variation)
+3. nc3 (paulsen variation)
+3. exd5 (exchange variation)
+4. nd2 (tarrasch variation)
+
+
+We should note that this position can  arise through 3 other transpositions (4 move orders in total) that will arive at the same position: 
+
+1. e4 e6 2. d4 d5 
+1. e4 d5 2. d4 e6 
+1. d4 e6 2. e4 d5 
+1. d4 d5 2. e4 e6 
+
+
+I believe it's most natural to analyze this position from the White perspective. This is because, while White cannot choose to enter the French defense, it is now up to White to choose the variation he/she wants to enter. 
+
+So Given the position: 1. e4 e6 2. d4 d5:
+
+What would our dataset suggest is the best fifth move, or ply (half-move), for white? 
+
+
+```{r setup, results = "hide", , warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+
+# attaching packages
+library(dplyr)
+library(ggplot2)
+library(stringr)
+
+# finding the pathway to the chess dataset
+chess_data <- read.csv("~josef/Desktop/games.csv")
+
+# taking a look at the data
+class(chess_data) # data.frame
+str(chess_data) # factors, integers, numeric data types
+dim(chess_data) # 20,058 observations and 16 variables
+head(chess_data)
+tail(chess_data)
+
+# we need to create a new variable to indicate who had the higher rating
+chess_data_fortified <- chess_data %>%
+  mutate(higher_rated = case_when(white_rating > black_rating ~ "white higher rating", 
+                                  white_rating < black_rating ~ "black higher rating", 
+                                  white_rating == black_rating ~ "equal rating"))
+
+# 1477 different openings (and defenses) in the book
+length(unique(chess_data_fortified$opening_name))  
+
+
+french_defense_advance_variation <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Advance Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Advance Variation") %>%
+  filter(opening_ply == 5)
+  
+
+french_defense_advance_variation_data_reported <- french_defense_advance_variation %>%
+  group_by(winner, shorter_opening_name, higher_rated) %>%
+  tally()
+
+french_defense_advance_variation_data_reported <- 
+  french_defense_advance_variation_data_reported %>%
+  mutate(freq = n / sum(french_defense_advance_variation_data_reported$n))
+
+
+french_defense_paulsen_variation <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Paulsen Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Paulsen Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_paulsen_variation_data_reported <- french_defense_paulsen_variation %>%
+  group_by(winner, shorter_opening_name, higher_rated) %>%
+  tally()
+
+french_defense_paulsen_variation_data_reported <- 
+  french_defense_paulsen_variation_data_reported %>%
+  mutate(freq = n / sum(french_defense_paulsen_variation_data_reported$n))
+
+
+french_defense_tarrasch_variation <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Tarrasch Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Tarrasch Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_tarrasch_variation_data_reported <- french_defense_tarrasch_variation %>%
+  group_by(winner, shorter_opening_name, higher_rated) %>%
+  tally()
+
+french_defense_tarrasch_variation_data_reported <- 
+  french_defense_tarrasch_variation_data_reported %>%
+  mutate(freq = n / sum(french_defense_tarrasch_variation_data_reported$n))
+
+
+french_defense_exchange_variation <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Exchange Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Exchange Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_exchange_variation_data_reported <- french_defense_exchange_variation %>%
+  group_by(winner, shorter_opening_name, higher_rated) %>%
+  tally()
+
+french_defense_exchange_variation_data_reported <- 
+  french_defense_exchange_variation_data_reported %>%
+  mutate(freq = n / sum(french_defense_exchange_variation_data_reported$n))
+
+
+
+
+
+```
+
+
+```{r winning variation, echo=TRUE, fig.align="center"}
+
+
+
+
+
+
+french_defense_advance_variation_main <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Advance Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Advance Variation") %>%
+  filter(opening_ply == 5)
+  
+  
+
+french_defense_advance_variation_data_reported_main <- french_defense_advance_variation_main %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+  
+
+french_defense_advance_variation_data_reported_main <- 
+  french_defense_advance_variation_data_reported_main %>%
+  mutate(freq = n / sum(french_defense_advance_variation_data_reported_main$n))
+
+
+french_defense_paulsen_variation_main <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Paulsen Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Paulsen Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_paulsen_variation_data_reported_main <- french_defense_paulsen_variation_main %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_paulsen_variation_data_reported_main <- 
+  french_defense_paulsen_variation_data_reported_main %>%
+  mutate(freq = n / sum(french_defense_paulsen_variation_data_reported_main$n))
+
+
+french_defense_tarrasch_variation_main <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Tarrasch Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Tarrasch Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_tarrasch_variation_data_reported_main <- french_defense_tarrasch_variation_main %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_tarrasch_variation_data_reported_main <- 
+  french_defense_tarrasch_variation_data_reported_main %>%
+  mutate(freq = n / sum(french_defense_tarrasch_variation_data_reported_main$n))
+
+
+french_defense_exchange_variation_main <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Exchange Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Exchange Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_exchange_variation_data_reported_main <- french_defense_exchange_variation_main %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_exchange_variation_data_reported_main <- 
+  french_defense_exchange_variation_data_reported_main %>%
+  mutate(freq = n / sum(french_defense_exchange_variation_data_reported_main$n))
+
+
+
+
+
+
+french_four_variations <- rbind(french_defense_advance_variation_data_reported_main, french_defense_paulsen_variation_data_reported_main, french_defense_tarrasch_variation_data_reported_main, french_defense_exchange_variation_data_reported_main)
+
+
+french_four_variations$shorter_opening_name <- french_four_variations$shorter_opening_name %>%
+  str_replace("French Defense: Advance Variation", "Advanced") %>%
+  str_replace("French Defense: Paulsen Variation", "Paulsen") %>%
+  str_replace("French Defense: Tarrasch Variation", "Tarrasch") %>%
+  str_replace("French Defense: Exchange Variation", "Exchange")
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+french_defense_advance_variation_white_higher_rating <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Advance Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Advance Variation") %>%
+  filter(opening_ply == 5)
+  
+  
+
+french_defense_advance_variation_data_reported_white_higher_rating <- french_defense_advance_variation_white_higher_rating %>%
+  filter(higher_rated == "white higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+  
+
+french_defense_advance_variation_data_reported_white_higher_rating <- 
+  french_defense_advance_variation_data_reported_white_higher_rating %>%
+  mutate(freq = n / sum(french_defense_advance_variation_data_reported_white_higher_rating$n))
+
+
+french_defense_paulsen_variation_white_higher_rating <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Paulsen Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Paulsen Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_paulsen_variation_data_reported_white_higher_rating <- french_defense_paulsen_variation_white_higher_rating %>%
+  filter(higher_rated == "white higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_paulsen_variation_data_reported_white_higher_rating <- 
+  french_defense_paulsen_variation_data_reported_white_higher_rating %>%
+  mutate(freq = n / sum(french_defense_paulsen_variation_data_reported_white_higher_rating$n))
+
+
+french_defense_tarrasch_variation_white_higher_rating <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Tarrasch Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Tarrasch Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_tarrasch_variation_data_reported_white_higher_rating <- french_defense_tarrasch_variation_white_higher_rating %>%
+  filter(higher_rated == "white higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_tarrasch_variation_data_reported_white_higher_rating <- 
+  french_defense_tarrasch_variation_data_reported_white_higher_rating %>%
+  mutate(freq = n / sum(french_defense_tarrasch_variation_data_reported_white_higher_rating$n))
+
+
+french_defense_exchange_variation_white_higher_rating <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Exchange Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Exchange Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_exchange_variation_data_reported_white_higher_rating <- french_defense_exchange_variation_white_higher_rating %>%
+  filter(higher_rated == "white higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_exchange_variation_data_reported_white_higher_rating <- 
+  french_defense_exchange_variation_data_reported_white_higher_rating %>%
+  mutate(freq = n / sum(french_defense_exchange_variation_data_reported_white_higher_rating$n))
+
+
+
+french_four_variations_white_higher_rating <- rbind(french_defense_advance_variation_data_reported_white_higher_rating, french_defense_paulsen_variation_data_reported_white_higher_rating, french_defense_tarrasch_variation_data_reported_white_higher_rating, french_defense_exchange_variation_data_reported_white_higher_rating)
+
+
+french_four_variations_white_higher_rating$shorter_opening_name <- french_four_variations_white_higher_rating$shorter_opening_name %>%
+  str_replace("French Defense: Advance Variation", "Advanced") %>%
+  str_replace("French Defense: Paulsen Variation", "Paulsen") %>%
+  str_replace("French Defense: Tarrasch Variation", "Tarrasch") %>%
+  str_replace("French Defense: Exchange Variation", "Exchange")
+
+
+
+
+
+
+
+
+french_defense_advance_variation_black_higher_rating <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Advance Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Advance Variation") %>%
+  filter(opening_ply == 5)
+  
+  
+
+french_defense_advance_variation_data_reported_black_higher_rating <- french_defense_advance_variation_black_higher_rating %>%
+  filter(higher_rated == "black higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+  
+
+french_defense_advance_variation_data_reported_black_higher_rating <- 
+  french_defense_advance_variation_data_reported_black_higher_rating %>%
+  mutate(freq = n / sum(french_defense_advance_variation_data_reported_black_higher_rating$n))
+
+
+french_defense_paulsen_variation4 <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Paulsen Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Paulsen Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_paulsen_variation_data_reported_black_higher_rating <- french_defense_paulsen_variation4 %>%
+  filter(higher_rated == "black higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_paulsen_variation_data_reported_black_higher_rating <- 
+  french_defense_paulsen_variation_data_reported_black_higher_rating %>%
+  mutate(freq = n / sum(french_defense_paulsen_variation_data_reported_black_higher_rating$n))
+
+
+french_defense_tarrasch_variation4 <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Tarrasch Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Tarrasch Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_tarrasch_variation_data_reported_black_higher_rating <- french_defense_tarrasch_variation4 %>%
+  filter(higher_rated == "black higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_tarrasch_variation_data_reported_black_higher_rating <- 
+  french_defense_tarrasch_variation_data_reported_black_higher_rating %>%
+  mutate(freq = n / sum(french_defense_tarrasch_variation_data_reported_black_higher_rating$n))
+
+
+french_defense_exchange_variation_black_higher_rating <- chess_data_fortified %>%
+  mutate(shorter_opening_name = str_extract(opening_name, 
+                                            "French Defense: Exchange Variation")) %>%
+  filter(shorter_opening_name == "French Defense: Exchange Variation") %>%
+  filter(opening_ply == 5)
+
+french_defense_exchange_variation_data_reported_black_higher_rating <- french_defense_exchange_variation_black_higher_rating %>%
+  filter(higher_rated == "black higher rating") %>%
+  group_by(winner, shorter_opening_name) %>%
+  tally()
+
+french_defense_exchange_variation_data_reported_black_higher_rating <- 
+  french_defense_exchange_variation_data_reported_black_higher_rating %>%
+  mutate(freq = n / sum(french_defense_exchange_variation_data_reported_black_higher_rating$n))
+
+
+french_four_variations_black_higher_rating <- rbind(french_defense_advance_variation_data_reported_black_higher_rating, french_defense_paulsen_variation_data_reported_black_higher_rating, french_defense_tarrasch_variation_data_reported_black_higher_rating, french_defense_exchange_variation_data_reported_black_higher_rating)
+
+
+
+french_four_variations_black_higher_rating$shorter_opening_name <- french_four_variations_black_higher_rating$shorter_opening_name %>%
+  str_replace("French Defense: Advance Variation", "Advanced") %>%
+  str_replace("French Defense: Paulsen Variation", "Paulsen") %>%
+  str_replace("French Defense: Tarrasch Variation", "Tarrasch") %>%
+  str_replace("French Defense: Exchange Variation", "Exchange")
+
+
+
+
+
+ggplot(french_four_variations, aes(x = shorter_opening_name, y = freq, color = winner)) +
+  geom_point(size=4) +
+  labs(title="Chess Game Analysis", subtitle = "French Defense - Four Variations") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  labs(caption = "Project 1") +
+  xlab("Opening Variation") +
+  ylab("Winning Chances") +
+  ylim(0, 1)
+
+
+ggplot(french_four_variations_white_higher_rating, aes(x = shorter_opening_name, y = freq, color = winner)) +
+  geom_point(size=4) +
+  labs(title="Chess Game Analysis", subtitle = "French Defense - Four Variations\n White Higher Rating") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  labs(caption = "Project 1") +
+  xlab("Opening Variation") +
+  ylab("Winning Chances") +
+  ylim(0, 1)
+
+ggplot(french_four_variations_black_higher_rating, aes(x = shorter_opening_name, y = freq, color = winner)) +
+  geom_point(size=4) +
+  labs(title="Chess Game Analysis", subtitle = "French Defense - Four Variations\n Black Higher Rating") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  labs(caption = "Project 1") +
+  xlab("Opening Variation") +
+  ylab("Winning Chances") +
+  ylim(0, 1)
+
+
+```
+
+
+
+```{r player ratings, echo=TRUE, fig.align="center"}
+
+
+mean_white_rating_advance <- mean(french_defense_advance_variation$white_rating)
+mean_white_rating_advance
+mean_black_rating_advance <- mean(french_defense_advance_variation$black_rating)
+mean_black_rating_advance
+
+average_rating_advance <- (mean_white_rating_advance + mean_black_rating_advance) / 2
+
+mean_white_rating_paulsen <- mean(french_defense_paulsen_variation$white_rating)
+mean_white_rating_paulsen
+mean_black_rating_paulsen <- mean(french_defense_paulsen_variation$black_rating)
+mean_black_rating_paulsen
+
+average_rating_paulsen <- (mean_white_rating_paulsen + mean_black_rating_paulsen) / 2
+
+mean_white_rating_tarrasch <- mean(french_defense_tarrasch_variation$white_rating)
+mean_white_rating_tarrasch
+mean_black_rating_tarrasch <-mean(french_defense_tarrasch_variation$black_rating)
+mean_black_rating_tarrasch
+
+average_rating_tarrasch <- (mean_white_rating_tarrasch + mean_black_rating_tarrasch) / 2
+
+mean_white_rating_exchange <- mean(french_defense_exchange_variation$white_rating)
+mean_white_rating_exchange
+mean_black_rating_exchange <- mean(french_defense_exchange_variation$black_rating)
+mean_black_rating_exchange
+
+average_rating_exchange <- (mean_white_rating_exchange + mean_black_rating_exchange) / 2
+
+rating_tibble <- tibble(average_rating_advance, average_rating_paulsen, average_rating_tarrasch, average_rating_exchange)
+rating_tibble
+
+library(tidyr)
+
+gathered_rating_tibble <- gather(rating_tibble, key = variation_and_winner, value = rating, 1:4)
+
+ggplot(gathered_rating_tibble, aes(x = variation_and_winner, y = rating)) +
+  geom_point(size=2) +
+  labs(title="Chess Game Analysis", subtitle = "French Defense - Four Variations\n Average Combined Rating") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  labs(caption = "Project 1") +
+  xlab("Opening Variation") +
+  ylab("Rating")
+
+```
+
+# Conclusion
+
+This analysis leads me to conclude that, as a chess player who often plays the King's Pawn opening as White, I would have to be prepared for 1. ... e6 (French Defense) in response to the King's Pawn Opening and, after 2. d4 d5, I would then play strategically in the following way:
+
+If, as White, I had a higher rating than my opponent, I would play either 3. e5 (Advanced Variation) or else 3. c3 (Paulsen Variation) because my analysis has indicated I have the best winning chances this way. 
+
+But if were to play against an opponent with a higher rating than me, I would choose instead 3. d2 (Tarrasch Variation) which seems to give equal chances. 
+
+Because there is a wide difference in the rating of players who tend to play these different variations of the French, I will say that I think that my concusion only really applies as long as you have a similar rating to your opponent. 
+
+
+
